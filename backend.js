@@ -2,6 +2,8 @@
 const express = require("express")
 const cors = require("cors")
 const mongoose = require('mongoose')
+const uniqueValidator = require('mongoose-unique-validator')
+const bcrypt = require('bcrypt');
 //const req = require("express/lib/request")
 const app = express()
 
@@ -18,6 +20,13 @@ const Filme = mongoose.model("Filme", mongoose.Schema({
     titulo: {type: String},
     sinopse: {type: String}
 }))
+
+const usuarioSchema = mongoose.Schema({
+    login: {type: String, unique: true, required: true},
+    senha: {type: String, required: true}
+})
+usuarioSchema.plugin(uniqueValidator);
+const Usuario = mongoose.model ("Usuario", usuarioSchema);
 
 //acesso para requisção http-get /oi
 app.get("/oi", (req, res) => {res.send('oi')})
@@ -41,6 +50,21 @@ app.post ("/filmes", async (req, res) => {
     const filmes = await Filme.find();
     //só para conferir (nn é necessario)
     res.send(filmes)
+})
+app.post("/signup", async (req, res) =>{
+    try{
+        const login = req.body.login;
+        const senha = req.body.senha;
+        const criptografada = await bcrypt.hash(senha, 10)
+        const usuario = new Usuario({login: login, senha: criptografada})
+        const respostaMongo = await usuario.save();
+        console.log(respostaMongo);
+        res.status(201).end();
+    }
+    catch(e){
+        console.log(e);
+        res.status(409).end()
+    }
 })
 app.listen(3000, () => {
     try{
